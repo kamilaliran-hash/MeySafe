@@ -1,0 +1,1028 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' blob: data:; img-src 'self' blob: data:; media-src 'self' blob: data:; frame-src blob:">
+<title>MeySafe</title>
+<link rel="icon" href="icon.png">
+<style>
+:root{
+  --bg:#0b1220;--bg2:#111a2e;--card:#16213a;--line:#24314f;--tx:#e6edf7;--mut:#8b9ab8;
+  --a1:#34d399;--a2:#06b6d4;--grad:linear-gradient(135deg,#34d399,#06b6d4);--red:#f87171;--ink:#0b1220;
+  --st:env(safe-area-inset-top,0px);--sb:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--tx);font:15px/1.4 "Segoe UI",Roboto,system-ui,sans-serif;overflow:hidden;user-select:none}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+input,textarea,select{font:inherit;color:var(--tx);background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:12px 14px;width:100%;outline:none;user-select:text}
+input:focus,textarea:focus{border-color:var(--a2)}
+.hide{display:none!important}
+.screen{position:fixed;inset:0;display:flex;flex-direction:column}
+.btn{background:var(--grad);color:var(--ink);font-weight:700;padding:12px 18px;border-radius:14px}
+.btn.ghost{background:var(--card);color:var(--tx);font-weight:600}
+.btn.danger{background:var(--red);color:#fff}
+.ico{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+/* lock */
+#lock{align-items:center;justify-content:center;padding:calc(24px + var(--st)) 24px calc(24px + var(--sb));background:radial-gradient(circle at 50% 0%,#1e1b4b 0,var(--bg) 65%)}
+#lock .logo{width:96px;height:96px;border-radius:24px;box-shadow:0 10px 40px #06b6d440}
+#lock h1{margin:16px 0 2px;font-size:26px;letter-spacing:.5px}
+#lock .sub{color:var(--mut);min-height:22px;text-align:center}
+.dots{display:flex;gap:14px;margin:22px 0 26px;height:16px}
+.dots i{width:14px;height:14px;border-radius:50%;border:2px solid var(--mut)}
+.dots i.on{background:var(--a1);border-color:var(--a1)}
+.dots.shake{animation:sh .4s}
+@keyframes sh{20%,60%{transform:translateX(-10px)}40%,80%{transform:translateX(10px)}}
+.pad{display:grid;grid-template-columns:repeat(3,76px);gap:16px}
+.pad button{width:76px;height:76px;border-radius:50%;background:var(--card);font-size:28px;font-weight:500}
+.pad button:active{background:var(--line)}
+.pad button.k-ok{background:var(--grad);color:var(--ink)}
+.pad button:disabled{opacity:.35}
+/* calculator */
+#calc{background:#000;padding:calc(12px + var(--st)) 14px calc(14px + var(--sb))}
+#calc .disp{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:flex-end;padding:10px 8px;overflow:hidden}
+#calc .expr{color:#888;font-size:22px;min-height:30px;word-break:break-all;text-align:right}
+#calc .res{font-size:56px;font-weight:300;word-break:break-all;text-align:right}
+#calc .keys{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+#calc .keys button{aspect-ratio:1;border-radius:50%;background:#333;font-size:30px;max-height:84px}
+#calc .keys .op{background:#ff9f0a}
+#calc .keys .fn{background:#a5a5a5;color:#000}
+#calc .keys .zero{grid-column:span 2;aspect-ratio:auto;border-radius:44px}
+/* app */
+#app{padding-top:var(--st)}
+header{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line);background:var(--bg)}
+header .t{flex:1;font-size:20px;font-weight:700;display:flex;align-items:center;gap:10px}
+header .t img{width:30px;height:30px;border-radius:8px}
+header .hb{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:var(--card)}
+.chips{display:flex;gap:8px;overflow-x:auto;padding:10px 14px 4px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{white-space:nowrap;padding:7px 14px;border-radius:20px;background:var(--card);color:var(--mut);font-size:14px}
+.chip.on{background:var(--grad);color:var(--ink);font-weight:700}
+main{flex:1;overflow-y:auto;padding:10px 14px 110px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(108px,1fr));gap:6px}
+.tile{position:relative;aspect-ratio:1;border-radius:10px;overflow:hidden;background:var(--card);display:grid;place-items:center}
+.tile img{width:100%;height:100%;object-fit:cover;display:block}
+.tile .dur{position:absolute;right:6px;bottom:5px;font-size:12px;background:#000a;padding:1px 6px;border-radius:6px}
+.tile .chk{position:absolute;left:6px;top:6px;width:24px;height:24px;border-radius:50%;border:2px solid #fff;background:#0005}
+.tile.sel .chk{background:var(--a1);border-color:var(--a1)}
+.tile.sel::after{content:"";position:absolute;inset:0;border:3px solid var(--a1);border-radius:10px}
+.tile .ph{color:var(--mut);font-size:12px;padding:6px;text-align:center;word-break:break-all}
+.list .row{display:flex;align-items:center;gap:12px;padding:12px;border-radius:14px;background:var(--card);margin-bottom:8px;position:relative}
+.list .row.sel{outline:2px solid var(--a1)}
+.ext{width:44px;height:44px;border-radius:10px;display:grid;place-items:center;font-size:11px;font-weight:800;background:var(--bg2);color:var(--a2);flex:none;text-transform:uppercase}
+.row .nm{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .mt{color:var(--mut);font-size:13px}
+.row .grow{flex:1;min-width:0}
+.empty{text-align:center;color:var(--mut);padding:60px 20px}
+.empty svg{width:64px;height:64px;opacity:.5;margin-bottom:8px}
+.note{background:var(--card);border-radius:14px;padding:14px;margin-bottom:10px}
+.note b{display:block;margin-bottom:4px}
+.note p{margin:0;color:var(--mut);font-size:14px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;white-space:pre-wrap}
+.note small{color:var(--mut);font-size:12px}
+.fab{position:fixed;right:18px;bottom:calc(86px + var(--sb));width:60px;height:60px;border-radius:20px;background:var(--grad);color:var(--ink);display:grid;place-items:center;box-shadow:0 8px 24px #06b6d455;z-index:5}
+.fab .ico{width:28px;height:28px;stroke-width:2.6}
+nav{position:fixed;left:0;right:0;bottom:0;display:flex;background:var(--bg2);border-top:1px solid var(--line);padding-bottom:var(--sb);z-index:6}
+nav button{flex:1;padding:9px 0 8px;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11.5px;color:var(--mut)}
+nav button.on{color:var(--a1)}
+.selbar{position:fixed;left:0;right:0;bottom:0;display:flex;gap:4px;background:var(--bg2);border-top:1px solid var(--line);padding:8px 8px calc(8px + var(--sb));z-index:7}
+.selbar button{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:12px;padding:6px 0;border-radius:12px}
+.selbar button:active{background:var(--card)}
+/* settings */
+.sec{margin:6px 0 18px}
+.sec h3{font-size:13px;color:var(--mut);text-transform:uppercase;letter-spacing:.8px;margin:0 4px 8px}
+.item{display:flex;align-items:center;gap:12px;background:var(--card);padding:14px;border-radius:14px;margin-bottom:6px;width:100%;text-align:left}
+.item .grow{flex:1}
+.item small{display:block;color:var(--mut);font-size:13px}
+.sw{width:46px;height:28px;border-radius:14px;background:var(--line);position:relative;flex:none;transition:.2s}
+.sw::after{content:"";position:absolute;left:3px;top:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:.2s}
+.sw.on{background:var(--a1)}
+.sw.on::after{left:21px}
+.about{text-align:center;padding:10px;color:var(--mut)}
+.about img{width:64px;height:64px;border-radius:16px}
+/* overlays */
+.ov{position:fixed;inset:0;z-index:20;background:#000;display:flex;flex-direction:column}
+.ov .bar{display:flex;align-items:center;gap:8px;padding:calc(10px + var(--st)) 10px 10px;background:linear-gradient(#000c,#0000);position:absolute;left:0;right:0;top:0;z-index:2}
+.ov .bar .nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+.ov .bar button{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;background:#ffffff14}
+.stage{flex:1;display:grid;place-items:center;overflow:hidden;touch-action:pan-y}
+.stage img,.stage video{max-width:100%;max-height:100%;object-fit:contain}
+.stage pre{color:var(--tx);white-space:pre-wrap;word-break:break-word;padding:70px 16px 20px;margin:0;align-self:stretch;justify-self:stretch;overflow:auto;font:14px/1.5 Consolas,monospace;user-select:text}
+.stage .nav{position:absolute;top:50%;width:46px;height:46px;border-radius:50%;background:#ffffff1c;display:grid;place-items:center;transform:translateY(-50%)}
+.stage .nav.l{left:10px}.stage .nav.r{right:10px}
+#editor{background:var(--bg)}
+#editor .bar{position:static;background:var(--bg);border-bottom:1px solid var(--line)}
+#editor .bar button{background:var(--card)}
+#editor .body{flex:1;display:flex;flex-direction:column;gap:10px;padding:14px}
+#editor input{font-size:20px;font-weight:700;background:transparent;border:0;padding:6px 2px}
+#editor textarea{flex:1;resize:none;background:transparent;border:0;padding:2px;font-size:16px;line-height:1.6}
+.modal{position:fixed;inset:0;z-index:40;background:#000a;display:flex;align-items:flex-end;justify-content:center;padding:16px 16px calc(16px + var(--sb))}
+@media(min-width:640px){.modal{align-items:center}}
+.modal .box{background:var(--bg2);border:1px solid var(--line);border-radius:20px;padding:20px;width:100%;max-width:420px;max-height:85vh;overflow:auto}
+.modal h2{margin:0 0 8px;font-size:19px}
+.modal p{color:var(--mut);margin:0 0 14px}
+.modal .acts{display:flex;flex-direction:column;gap:8px;margin-top:14px}
+.modal .opt{display:block;width:100%;text-align:left;padding:12px 14px;border-radius:12px;background:var(--card);margin-bottom:6px}
+.toast{position:fixed;left:50%;bottom:calc(150px + var(--sb));transform:translateX(-50%);background:#e6edf7;color:var(--ink);padding:10px 18px;border-radius:24px;font-weight:600;z-index:60;max-width:90%;text-align:center}
+.prog{position:fixed;inset:0;z-index:50;background:#000b;display:grid;place-items:center}
+.prog .box{background:var(--bg2);padding:22px;border-radius:18px;width:280px;text-align:center}
+.prog .barw{height:8px;background:var(--line);border-radius:4px;overflow:hidden;margin-top:12px}
+.prog .barw i{display:block;height:100%;background:var(--grad);width:0;transition:width .2s}
+.miniPad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+.miniPad button{padding:14px;border-radius:12px;background:var(--card);font-size:20px}
+</style>
+</head>
+<body>
+
+<!-- LOCK / SETUP -->
+<section id="lock" class="screen hide">
+  <img class="logo" src="icon.png" alt="MeySafe">
+  <h1>MeySafe</h1>
+  <div class="sub" id="lockMsg">Enter PIN</div>
+  <div class="dots" id="dots"></div>
+  <div class="pad" id="pad"></div>
+</section>
+
+<!-- CALCULATOR DISGUISE -->
+<section id="calc" class="screen hide">
+  <div class="disp"><div class="expr" id="cExpr"></div><div class="res" id="cRes">0</div></div>
+  <div class="keys" id="cKeys"></div>
+</section>
+
+<!-- APP -->
+<section id="app" class="screen hide">
+  <header>
+    <div class="t"><img src="icon.png" alt=""><span id="hTitle">Photos</span></div>
+    <button class="hb" id="hSelect" title="Select"><svg class="ico" viewBox="0 0 24 24"><path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg></button>
+    <button class="hb" id="hLock" title="Lock"><svg class="ico" viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></button>
+  </header>
+  <div class="chips hide" id="chips"></div>
+  <main id="main"></main>
+  <button class="fab" id="fab"><svg class="ico" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
+  <nav id="nav">
+    <button data-tab="photos" class="on"><svg class="ico" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>Photos</button>
+    <button data-tab="videos"><svg class="ico" viewBox="0 0 24 24"><rect x="2" y="5" width="15" height="14" rx="2"/><path d="M17 10l5-3v10l-5-3z"/></svg>Videos</button>
+    <button data-tab="files"><svg class="ico" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>Files</button>
+    <button data-tab="notes"><svg class="ico" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Notes</button>
+    <button data-tab="settings"><svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Settings</button>
+  </nav>
+  <div class="selbar hide" id="selbar"></div>
+</section>
+
+<!-- VIEWER -->
+<section id="viewer" class="ov hide">
+  <div class="bar">
+    <button id="vClose"><svg class="ico" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button>
+    <div class="nm" id="vName"></div>
+    <button id="vInfo" title="Info"><svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h0"/></svg></button>
+    <button id="vExport" title="Unhide / Export"><svg class="ico" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5M12 15V3"/></svg></button>
+    <button id="vDel" title="Delete"><svg class="ico" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></button>
+  </div>
+  <div class="stage" id="vStage"></div>
+</section>
+
+<!-- NOTE EDITOR -->
+<section id="editor" class="ov hide">
+  <div class="bar">
+    <button id="eBack"><svg class="ico" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button>
+    <div class="nm" id="eState">Saved · encrypted</div>
+    <button id="eDel"><svg class="ico" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></button>
+  </div>
+  <div class="body">
+    <input id="eTitle" placeholder="Title" maxlength="120">
+    <textarea id="eBody" placeholder="Write a private note…"></textarea>
+  </div>
+</section>
+
+<input type="file" id="picker" class="hide" multiple>
+<input type="file" id="restorePicker" class="hide" accept=".meysafe,application/octet-stream">
+
+<script>
+"use strict";
+/* ============================================================
+   MeySafe v1.0.0 — private photo, video, file & note vault
+   Developer: Kamil
+   Encryption: AES-256-GCM, master key wrapped with a PIN-derived
+   key (PBKDF2-SHA256, 150k iterations). Everything stored is
+   encrypted: file bytes, thumbnails, names and note text.
+   ============================================================ */
+const VERSION = "1.0.0";
+const $ = (s, r = document) => r.querySelector(s);
+const TE = new TextEncoder(), TD = new TextDecoder();
+const NATIVE = window.MeySafeNative || null;      // Android bridge
+const DESK = window.meysafeDesktop || null;        // Electron bridge
+const ITER = 150000;
+const BIN_DAYS = 30;
+
+/* ---------------- IndexedDB ---------------- */
+function idbOpen(name, stores) {
+  return new Promise((res, rej) => {
+    const r = indexedDB.open(name, 1);
+    r.onupgradeneeded = () => stores.forEach(s => { if (!r.result.objectStoreNames.contains(s)) r.result.createObjectStore(s); });
+    r.onsuccess = () => res(r.result);
+    r.onerror = () => rej(r.error);
+  });
+}
+function idbReq(db, store, mode, fn) {
+  return new Promise((res, rej) => {
+    const t = db.transaction(store, mode), s = t.objectStore(store);
+    let out; const r = fn(s);
+    if (r) r.onsuccess = () => { out = r.result; };
+    t.oncomplete = () => res(out);
+    t.onerror = () => rej(t.error); t.onabort = () => rej(t.error || new Error("aborted"));
+  });
+}
+const idb = {
+  get: (db, st, k) => idbReq(db, st, "readonly", s => s.get(k)),
+  put: (db, st, k, v) => idbReq(db, st, "readwrite", s => s.put(v, k)),
+  del: (db, st, k) => idbReq(db, st, "readwrite", s => s.delete(k)),
+  clear: (db, st) => idbReq(db, st, "readwrite", s => s.clear()),
+  entries: (db, st) => new Promise((res, rej) => {
+    const out = [], t = db.transaction(st, "readonly"), c = t.objectStore(st).openCursor();
+    c.onsuccess = () => { const cur = c.result; if (cur) { out.push([cur.key, cur.value]); cur.continue(); } };
+    t.oncomplete = () => res(out); t.onerror = () => rej(t.error);
+  })
+};
+
+/* ---------------- Crypto ---------------- */
+const rand = n => crypto.getRandomValues(new Uint8Array(n));
+async function pinKey(pin, salt) {
+  const base = await crypto.subtle.importKey("raw", TE.encode(pin), "PBKDF2", false, ["deriveKey"]);
+  return crypto.subtle.deriveKey({ name: "PBKDF2", salt, iterations: ITER, hash: "SHA-256" }, base,
+    { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]);
+}
+async function aesEnc(key, data) {
+  const iv = rand(12);
+  const ct = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, data);
+  return { iv, ct };
+}
+const aesDec = (key, rec) => crypto.subtle.decrypt({ name: "AES-GCM", iv: rec.iv }, key, rec.ct);
+const encJSON = (key, o) => aesEnc(key, TE.encode(JSON.stringify(o)));
+const decJSON = async (key, rec) => JSON.parse(TD.decode(await aesDec(key, rec)));
+const importMaster = raw => crypto.subtle.importKey("raw", raw, "AES-GCM", false, ["encrypt", "decrypt"]);
+async function makeSlot(pin, raw) {
+  raw = raw || rand(32);
+  const salt = rand(16), w = await aesEnc(await pinKey(pin, salt), raw);
+  return { slot: { salt, iv: w.iv, wrapped: w.ct }, raw };
+}
+async function openSlot(slot, pin) {
+  if (!slot) return null;
+  try { return await aesDec(await pinKey(pin, slot.salt), { iv: slot.iv, ct: slot.wrapped }); }
+  catch { return null; }
+}
+
+/* ---------------- Config (non-secret) ---------------- */
+let cfgDB, cfg = { slots: {}, settings: {}, intruders: [], lockout: 0, fails: 0 };
+const DEFAULT_SETTINGS = { disguise: false, autolock: 0, askDelete: true, gridBig: false };
+async function loadCfg() {
+  cfgDB = await idbOpen("meysafe-config", ["kv"]);
+  for (const k of ["slots", "settings", "intruders", "lockout", "fails"]) {
+    const v = await idb.get(cfgDB, "kv", k); if (v !== undefined) cfg[k] = v;
+  }
+  cfg.settings = Object.assign({}, DEFAULT_SETTINGS, cfg.settings);
+}
+const saveCfg = k => idb.put(cfgDB, "kv", k, cfg[k]);
+
+/* ---------------- State ---------------- */
+const S = {
+  slot: null, key: null, raw: null, db: null, items: new Map(),
+  tab: "photos", album: "", selecting: false, sel: new Set(), bin: false,
+  thumbs: new Map(), hiddenAt: 0, picking: false, view: null, note: null
+};
+
+/* ---------------- Helpers ---------------- */
+const uid = () => Date.now().toString(36) + Array.from(rand(6), b => b.toString(16).padStart(2, "0")).join("");
+function fmtSize(n) { if (n < 1024) return n + " B"; const u = ["KB", "MB", "GB"]; let i = -1; do { n /= 1024; i++; } while (n >= 1024 && i < 2); return n.toFixed(n < 10 ? 1 : 0) + " " + u[i]; }
+const fmtDate = t => new Date(t).toLocaleString(undefined, { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+const fmtDur = s => { s = Math.round(s || 0); const m = Math.floor(s / 60); return m + ":" + String(s % 60).padStart(2, "0"); };
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const extOf = n => (n.match(/\.([a-z0-9]{1,6})$/i) || [, ""])[1].toLowerCase();
+const MIME = { jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", gif: "image/gif", webp: "image/webp", bmp: "image/bmp", heic: "image/heic", heif: "image/heif", svg: "image/svg+xml", avif: "image/avif",
+  mp4: "video/mp4", m4v: "video/mp4", mov: "video/quicktime", webm: "video/webm", mkv: "video/x-matroska", avi: "video/x-msvideo", "3gp": "video/3gpp", wmv: "video/x-ms-wmv",
+  mp3: "audio/mpeg", m4a: "audio/mp4", wav: "audio/wav", ogg: "audio/ogg", flac: "audio/flac", aac: "audio/aac",
+  pdf: "application/pdf", txt: "text/plain", md: "text/markdown", csv: "text/csv", json: "application/json", zip: "application/zip",
+  doc: "application/msword", docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document", xls: "application/vnd.ms-excel",
+  xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", ppt: "application/vnd.ms-powerpoint", pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation" };
+const mimeOf = f => f.type || MIME[extOf(f.name)] || "application/octet-stream";
+const IMG_ACCEPT = "image/*,.jpg,.jpeg,.png,.gif,.webp,.bmp,.heic,.heif,.avif";
+const VID_ACCEPT = "video/*,.mp4,.m4v,.mov,.webm,.mkv,.avi,.3gp,.wmv";
+function toast(msg, ms = 2200) { const d = document.createElement("div"); d.className = "toast"; d.textContent = msg; document.body.appendChild(d); setTimeout(() => d.remove(), ms); }
+function b64(u8) { let s = ""; for (let i = 0; i < u8.length; i += 0x8000) s += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000)); return btoa(s); }
+function unb64(s) { const b = atob(s), u = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return u; }
+const show = (el, on = true) => (typeof el === "string" ? $(el) : el).classList.toggle("hide", !on);
+
+/* ---------------- Modals ---------------- */
+function modal({ title, text = "", html = "", buttons = [{ label: "OK", value: true, cls: "" }], onOpen }) {
+  return new Promise(res => {
+    const m = document.createElement("div"); m.className = "modal";
+    m.innerHTML = `<div class="box"><h2>${esc(title)}</h2>${text ? `<p>${esc(text)}</p>` : ""}${html}<div class="acts"></div></div>`;
+    const acts = m.querySelector(".acts");
+    const close = v => { m.remove(); S._modal = null; res(v); };
+    buttons.forEach(b => { const btn = document.createElement("button"); btn.className = "btn " + (b.cls || ""); btn.textContent = b.label; btn.onclick = () => close(typeof b.value === "function" ? b.value(m) : b.value); acts.appendChild(btn); });
+    m.addEventListener("click", e => { if (e.target === m) close(null); });
+    document.body.appendChild(m); S._modal = () => close(null);
+    onOpen && onOpen(m);
+  });
+}
+const confirmBox = (title, text, ok = "OK", cls = "") => modal({ title, text, buttons: [{ label: ok, value: true, cls }, { label: "Cancel", value: false, cls: "ghost" }] });
+const promptBox = (title, value = "", placeholder = "") => modal({
+  title, html: `<input id="pIn" value="${esc(value)}" placeholder="${esc(placeholder)}" maxlength="80">`,
+  buttons: [{ label: "Save", value: m => m.querySelector("#pIn").value.trim() }, { label: "Cancel", value: null, cls: "ghost" }],
+  onOpen: m => { const i = m.querySelector("#pIn"); setTimeout(() => { i.focus(); i.select(); }, 50); i.onkeydown = e => { if (e.key === "Enter") m.querySelector(".acts .btn").click(); }; }
+});
+function pinPrompt(title, text) {
+  return modal({
+    title, text,
+    html: `<input id="pIn" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="8" placeholder="4–8 digit PIN" style="text-align:center;font-size:22px;letter-spacing:6px">`,
+    buttons: [{ label: "Continue", value: m => m.querySelector("#pIn").value }, { label: "Cancel", value: null, cls: "ghost" }],
+    onOpen: m => { const i = m.querySelector("#pIn"); i.oninput = () => { i.value = i.value.replace(/\D/g, ""); }; setTimeout(() => i.focus(), 50); i.onkeydown = e => { if (e.key === "Enter") m.querySelector(".acts .btn").click(); }; }
+  });
+}
+function progress(title) {
+  const p = document.createElement("div"); p.className = "prog";
+  p.innerHTML = `<div class="box"><b>${esc(title)}</b><div class="mt" id="pgTxt" style="color:var(--mut);margin-top:6px"></div><div class="barw"><i></i></div></div>`;
+  document.body.appendChild(p);
+  return { set(i, n, t) { p.querySelector("i").style.width = (n ? (100 * i / n) : 0) + "%"; p.querySelector("#pgTxt").textContent = t || `${i} / ${n}`; }, done() { p.remove(); } };
+}
+
+/* ============================================================
+   LOCK SCREEN / SETUP
+   ============================================================ */
+let pinBuf = "", lockMode = "unlock", firstPin = "";
+function buildPad() {
+  const pad = $("#pad"); pad.innerHTML = "";
+  ["1", "2", "3", "4", "5", "6", "7", "8", "9", "⌫", "0", "✓"].forEach(k => {
+    const b = document.createElement("button"); b.textContent = k;
+    if (k === "✓") b.className = "k-ok";
+    b.onclick = () => padKey(k); pad.appendChild(b);
+  });
+}
+function renderDots(n = pinBuf.length) {
+  const d = $("#dots"); const total = Math.max(4, Math.min(8, n));
+  d.innerHTML = Array.from({ length: total }, (_, i) => `<i class="${i < n ? "on" : ""}"></i>`).join("");
+}
+function shake(msg) { const d = $("#dots"); d.classList.remove("shake"); void d.offsetWidth; d.classList.add("shake"); if (msg) $("#lockMsg").textContent = msg; if (navigator.vibrate) navigator.vibrate(120); }
+function setPadEnabled(on) { document.querySelectorAll("#pad button").forEach(b => b.disabled = !on); }
+async function padKey(k) {
+  if (k === "⌫") pinBuf = pinBuf.slice(0, -1);
+  else if (k === "✓") return submitPin();
+  else if (pinBuf.length < 8) pinBuf += k;
+  renderDots();
+}
+document.addEventListener("keydown", e => {
+  if ($("#lock").classList.contains("hide") || S._modal) return;
+  if (/^[0-9]$/.test(e.key)) padKey(e.key);
+  else if (e.key === "Backspace") padKey("⌫");
+  else if (e.key === "Enter") padKey("✓");
+});
+function showLock(mode) {
+  lockMode = mode; pinBuf = ""; firstPin = "";
+  show("#calc", false); show("#app", false); show("#lock");
+  $("#lockMsg").textContent = mode === "setup" ? "Create a 4–8 digit PIN" : "Enter PIN";
+  renderDots(0); setPadEnabled(true); checkLockout();
+}
+function checkLockout() {
+  const left = cfg.lockout - Date.now();
+  if (left > 0 && lockMode === "unlock") {
+    setPadEnabled(false);
+    $("#lockMsg").textContent = `Too many attempts. Try again in ${Math.ceil(left / 1000)}s`;
+    clearTimeout(S._lt); S._lt = setTimeout(checkLockout, 1000);
+  } else if (lockMode === "unlock") { setPadEnabled(true); if (/Too many/.test($("#lockMsg").textContent)) $("#lockMsg").textContent = "Enter PIN"; }
+}
+async function submitPin() {
+  const pin = pinBuf;
+  if (pin.length < 4) return shake("PIN must be 4–8 digits");
+  if (lockMode === "setup") {
+    if (!firstPin) { firstPin = pin; pinBuf = ""; renderDots(0); $("#lockMsg").textContent = "Confirm your PIN"; return; }
+    if (pin !== firstPin) { firstPin = ""; pinBuf = ""; renderDots(0); return shake("PINs didn't match — start again"); }
+    $("#lockMsg").textContent = "Creating your encrypted vault…"; setPadEnabled(false);
+    const { slot, raw } = await makeSlot(pin);
+    cfg.slots = { A: slot }; await saveCfg("slots");
+    await openVault("A", raw);
+    modal({ title: "Your vault is ready", text: "Everything you add is encrypted on this device. There is no PIN recovery — if you forget your PIN, the vault can't be opened. Make a backup from Settings regularly." });
+    return;
+  }
+  setPadEnabled(false); $("#lockMsg").textContent = "Unlocking…";
+  const ok = await tryUnlock(pin, true);
+  if (!ok) { pinBuf = ""; renderDots(0); setPadEnabled(true); checkLockout(); }
+}
+async function tryUnlock(pin, log) {
+  for (const name of ["A", "B"]) {
+    const raw = await openSlot(cfg.slots[name], pin);
+    if (raw) { cfg.fails = 0; await saveCfg("fails"); await openVault(name, raw); return true; }
+  }
+  if (log) {
+    cfg.fails = (cfg.fails || 0) + 1;
+    cfg.intruders.unshift({ t: Date.now(), via: "PIN" }); cfg.intruders = cfg.intruders.slice(0, 100);
+    await saveCfg("intruders"); await saveCfg("fails");
+    if (cfg.fails >= 5) { cfg.lockout = Date.now() + 30000 * Math.pow(2, Math.min(4, cfg.fails - 5)); await saveCfg("lockout"); }
+    shake(`Wrong PIN${cfg.fails >= 3 ? ` (${cfg.fails} attempts)` : ""}`);
+  }
+  return false;
+}
+
+/* ============================================================
+   CALCULATOR DISGUISE
+   ============================================================ */
+let cExpr = "", cDigits = "", cJust = false;
+function buildCalc() {
+  const keys = [["C", "fn"], ["±", "fn"], ["%", "fn"], ["÷", "op"], ["7"], ["8"], ["9"], ["×", "op"], ["4"], ["5"], ["6"], ["−", "op"], ["1"], ["2"], ["3"], ["+", "op"], ["0", "zero"], ["."], ["=", "op"]];
+  const box = $("#cKeys"); box.innerHTML = "";
+  keys.forEach(([k, c]) => { const b = document.createElement("button"); b.textContent = k; if (c) b.className = c; b.onclick = () => calcKey(k); box.appendChild(b); });
+}
+function calcEval(s) {
+  const toks = s.replace(/×/g, "*").replace(/÷/g, "/").replace(/−/g, "-").match(/(\d+\.?\d*|\.\d+|[+\-*/])/g);
+  if (!toks) return 0;
+  const nums = [], ops = [];
+  let neg = false;
+  for (const t of toks) {
+    if (/[+\-*/]/.test(t)) { if (nums.length === ops.length) { if (t === "-") neg = !neg; continue; } ops.push(t); }
+    else { nums.push((neg ? -1 : 1) * parseFloat(t)); neg = false; }
+  }
+  if (ops.length >= nums.length) ops.length = nums.length - 1;
+  const n2 = [nums[0]], o2 = [];
+  ops.forEach((o, i) => { const b = nums[i + 1]; if (o === "*") n2.push(n2.pop() * b); else if (o === "/") n2.push(n2.pop() / b); else { o2.push(o); n2.push(b); } });
+  let r = n2[0]; o2.forEach((o, i) => r = o === "+" ? r + n2[i + 1] : r - n2[i + 1]);
+  return Math.round(r * 1e10) / 1e10;
+}
+async function calcKey(k) {
+  if (/^[0-9]$/.test(k)) { if (cJust) { cExpr = ""; cJust = false; } cExpr += k; cDigits += k; }
+  else if (k === ".") { if (cJust) { cExpr = "0"; cJust = false; } cExpr += "."; cDigits = "x"; }
+  else if (k === "C") { cExpr = ""; cDigits = ""; }
+  else if (k === "±") { const v = calcEval(cExpr); cExpr = String(-v); cDigits = "x"; }
+  else if (k === "%") { const v = calcEval(cExpr); cExpr = String(v / 100); cDigits = "x"; }
+  else if (k === "=") {
+    if (/^\d{4,8}$/.test(cDigits) && cExpr === cDigits) {
+      const ok = await tryUnlock(cDigits, false);
+      if (ok) { cExpr = ""; cDigits = ""; renderCalc(); return; }
+    }
+    const v = calcEval(cExpr); $("#cExpr").textContent = cExpr; cExpr = isFinite(v) ? String(v) : "Error"; cJust = true; cDigits = "x";
+    $("#cRes").textContent = cExpr; if (cExpr === "Error") cExpr = ""; return;
+  } else { cJust = false; if (/[+−×÷]$/.test(cExpr)) cExpr = cExpr.slice(0, -1); cExpr += k; cDigits = "x"; }
+  renderCalc();
+}
+function renderCalc() { $("#cRes").textContent = cExpr || "0"; $("#cExpr").textContent = ""; }
+function showCalc() { cExpr = ""; cDigits = ""; renderCalc(); show("#lock", false); show("#app", false); show("#calc"); }
+
+/* ============================================================
+   VAULT
+   ============================================================ */
+async function openVault(slot, raw) {
+  S.slot = slot; S.raw = new Uint8Array(raw); S.key = await importMaster(raw);
+  S.db = await idbOpen("meysafe-vault-" + slot, ["meta", "data", "thumb"]);
+  S.items.clear();
+  for (const [id, rec] of await idb.entries(S.db, "meta")) {
+    try { S.items.set(id, await decJSON(S.key, rec)); } catch (e) { console.warn("meta decrypt fail", id); }
+  }
+  // purge recycle bin
+  const cutoff = Date.now() - BIN_DAYS * 864e5;
+  for (const m of [...S.items.values()]) if (m.deleted && m.deletedAt < cutoff) await purgeItem(m.id);
+  show("#lock", false); show("#calc", false); show("#app");
+  S.bin = false; S.album = ""; exitSelect(); setTab(S.tab || "photos");
+}
+function lockNow() {
+  if (!S.key) return;
+  closeViewer(); closeEditor(true);
+  if (S._modal) S._modal();
+  S.key = null; if (S.raw) S.raw.fill(0); S.raw = null; S.items.clear(); S.slot = null;
+  for (const u of S.thumbs.values()) URL.revokeObjectURL(u); S.thumbs.clear();
+  try { S.db && S.db.close(); } catch { } S.db = null;
+  $("#main").innerHTML = "";
+  cfg.settings.disguise ? showCalc() : showLock("unlock");
+}
+async function putMeta(m) { S.items.set(m.id, m); await idb.put(S.db, "meta", m.id, await encJSON(S.key, m)); }
+async function getData(id) { const r = await idb.get(S.db, "data", id); return r ? aesDec(S.key, r) : null; }
+async function purgeItem(id) {
+  await idb.del(S.db, "meta", id); await idb.del(S.db, "data", id); await idb.del(S.db, "thumb", id);
+  S.items.delete(id); const u = S.thumbs.get(id); if (u) { URL.revokeObjectURL(u); S.thumbs.delete(id); }
+}
+
+/* ---------- thumbnails ---------- */
+function canvasThumb(src, w, h) {
+  const max = 360, sc = Math.min(1, max / Math.max(w, h));
+  const c = document.createElement("canvas"); c.width = Math.max(1, Math.round(w * sc)); c.height = Math.max(1, Math.round(h * sc));
+  c.getContext("2d").drawImage(src, 0, 0, c.width, c.height);
+  return new Promise(r => c.toBlob(r, "image/jpeg", 0.78));
+}
+function imageThumb(file) {
+  return new Promise(res => {
+    const url = URL.createObjectURL(file), im = new Image();
+    const fin = v => { URL.revokeObjectURL(url); res(v); };
+    im.onload = async () => fin({ blob: await canvasThumb(im, im.naturalWidth, im.naturalHeight), w: im.naturalWidth, h: im.naturalHeight });
+    im.onerror = () => fin(null); im.src = url;
+  });
+}
+function videoThumb(file) {
+  return new Promise(res => {
+    const url = URL.createObjectURL(file), v = document.createElement("video");
+    let done = false; const fin = x => { if (done) return; done = true; v.removeAttribute("src"); v.load(); URL.revokeObjectURL(url); res(x); };
+    v.muted = true; v.playsInline = true; v.preload = "metadata";
+    v.onloadedmetadata = () => { v.currentTime = Math.min(1, (v.duration || 0) / 3); };
+    v.onseeked = async () => { try { fin({ blob: await canvasThumb(v, v.videoWidth, v.videoHeight), w: v.videoWidth, h: v.videoHeight, duration: v.duration }); } catch { fin({ duration: v.duration }); } };
+    v.onerror = () => fin(null);
+    setTimeout(() => fin(null), 10000);
+    v.src = url;
+  });
+}
+async function thumbURL(id) {
+  if (S.thumbs.has(id)) return S.thumbs.get(id);
+  const r = await idb.get(S.db, "thumb", id); if (!r || !S.key) return null;
+  const u = URL.createObjectURL(new Blob([await aesDec(S.key, r)], { type: "image/jpeg" }));
+  S.thumbs.set(id, u); return u;
+}
+
+/* ---------- import ---------- */
+function pick(accept) {
+  const p = $("#picker"); p.value = ""; p.accept = accept || "";
+  S.picking = true; p.click();
+  setTimeout(() => { S.picking = false; }, 120000);
+}
+$("#picker").addEventListener("change", async e => {
+  S.picking = false;
+  const files = [...e.target.files]; if (!files.length || !S.key) return;
+  await importFiles(files);
+});
+async function importFiles(files) {
+  const forced = S.tab === "files" ? "file" : null;
+  const pg = progress("Encrypting & hiding"); let ok = 0;
+  for (let i = 0; i < files.length; i++) {
+    const f = files[i]; pg.set(i, files.length, `${i + 1} / ${files.length} · ${f.name}`);
+    try {
+      const mime = mimeOf(f);
+      const type = forced || (mime.startsWith("image/") ? "photo" : mime.startsWith("video/") ? "video" : "file");
+      const id = uid();
+      let th = null;
+      if (type === "photo" || mime.startsWith("image/")) th = await imageThumb(f);
+      else if (type === "video" || mime.startsWith("video/")) th = await videoThumb(f);
+      const buf = await f.arrayBuffer();
+      await idb.put(S.db, "data", id, await aesEnc(S.key, buf));
+      if (th && th.blob) await idb.put(S.db, "thumb", id, await aesEnc(S.key, await th.blob.arrayBuffer()));
+      await putMeta({ id, type, name: f.name, mime, size: f.size, album: (type !== "file" && S.album) || "", created: Date.now(),
+        modified: f.lastModified || 0, w: th && th.w, h: th && th.h, duration: th && th.duration, thumb: !!(th && th.blob), deleted: false });
+      ok++;
+    } catch (err) { console.error(err); toast("Couldn't hide " + f.name); }
+  }
+  pg.set(files.length, files.length); pg.done();
+  render();
+  toast(`${ok} item${ok === 1 ? "" : "s"} hidden & encrypted`);
+  if (ok && cfg.settings.askDelete && NATIVE && NATIVE.canDeleteOriginals && NATIVE.canDeleteOriginals()) {
+    const yes = await confirmBox("Delete originals?", "Your files are safely encrypted in MeySafe. Remove the original copies from your phone's gallery/storage so they're truly hidden?", "Delete originals", "danger");
+    if (yes) { S.picking = true; NATIVE.deleteOriginals(); }
+  } else if (ok && cfg.settings.askDelete && !S._delTip) {
+    S._delTip = true; toast("Tip: delete the original files so they are only kept in MeySafe", 3500);
+  }
+}
+window.msOriginalsDeleted = n => toast(n > 0 ? `${n} original${n === 1 ? "" : "s"} deleted` : "Originals were not deleted");
+
+/* ---------- export / unhide ---------- */
+async function saveOut(name, mime, blob, dir) {
+  if (NATIVE && NATIVE.beginSave) {
+    const h = NATIVE.beginSave(name, mime || "application/octet-stream"); if (!h) throw new Error("save failed");
+    const CH = 768 * 1024;
+    for (let i = 0; i < blob.size; i += CH) NATIVE.appendChunk(h, b64(new Uint8Array(await blob.slice(i, i + CH).arrayBuffer())));
+    const where = NATIVE.endSave(h); if (!where) throw new Error("save failed"); return where;
+  }
+  if (DESK) {
+    const bytes = new Uint8Array(await blob.arrayBuffer());
+    return dir ? DESK.writeTo(dir, name, bytes) : DESK.save(name, bytes);
+  }
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 30000); return "Downloads";
+}
+async function exportItems(ids) {
+  ids = ids.filter(id => S.items.has(id)); if (!ids.length) return false;
+  const choice = await modal({
+    title: ids.length > 1 ? `Unhide ${ids.length} items` : "Unhide item",
+    text: "Decrypt and save back to your device. You can keep a copy in the vault, or move it out.",
+    buttons: [{ label: "Unhide (move out of vault)", value: "move" }, { label: "Export a copy", value: "copy", cls: "ghost" }, { label: "Cancel", value: null, cls: "ghost" }]
+  });
+  if (!choice) return false;
+  let dir = null;
+  if (DESK && ids.length > 1) { dir = await DESK.pickDir(); if (!dir) return false; }
+  const pg = progress("Decrypting"); let ok = 0, where = "";
+  for (let i = 0; i < ids.length; i++) {
+    const m = S.items.get(ids[i]); pg.set(i, ids.length, m.name);
+    try {
+      const buf = m.type === "note" ? TE.encode(await noteText(m)) : await getData(m.id);
+      const name = m.type === "note" ? (m.title || "Note").replace(/[\\/:*?"<>|]/g, "_") + ".txt" : m.name;
+      where = await saveOut(name, m.type === "note" ? "text/plain" : m.mime, new Blob([buf]), dir);
+      if (choice === "move") await purgeItem(m.id);
+      ok++;
+    } catch (e) { console.error(e); toast("Failed: " + m.name); }
+  }
+  pg.done(); render();
+  if (ok) toast(`${ok} item${ok === 1 ? "" : "s"} saved${where && typeof where === "string" ? " to " + where : ""}`, 3000);
+  return choice === "move" && ok > 0;
+}
+
+/* ---------- delete / restore ---------- */
+async function trashItems(ids) {
+  if (!ids.length) return false;
+  if (!await confirmBox(`Move ${ids.length} item${ids.length > 1 ? "s" : ""} to Recycle bin?`, `Items are permanently erased after ${BIN_DAYS} days.`, "Move to bin", "danger")) return false;
+  for (const id of ids) { const m = S.items.get(id); if (m) { m.deleted = true; m.deletedAt = Date.now(); await putMeta(m); } }
+  render(); toast("Moved to Recycle bin"); return true;
+}
+async function restoreItems(ids) { for (const id of ids) { const m = S.items.get(id); if (m) { m.deleted = false; delete m.deletedAt; await putMeta(m); } } render(); toast("Restored"); }
+async function eraseItems(ids) {
+  if (!ids.length) return;
+  if (!await confirmBox("Delete permanently?", "This can't be undone.", "Delete forever", "danger")) return;
+  for (const id of ids) await purgeItem(id); render(); toast("Deleted permanently");
+}
+async function moveToAlbum(ids) {
+  const albums = albumList(S.tab === "videos" ? "video" : "photo");
+  const v = await modal({
+    title: "Move to album",
+    html: `<button class="opt" data-a="">No album</button>${albums.map(a => `<button class="opt" data-a="${esc(a)}">${esc(a)}</button>`).join("")}<input id="newAlb" placeholder="New album name" maxlength="40" style="margin-top:6px">`,
+    buttons: [{ label: "Create & move", value: m => ({ a: m.querySelector("#newAlb").value.trim() }) }, { label: "Cancel", value: null, cls: "ghost" }],
+    onOpen: m => m.querySelectorAll(".opt").forEach(b => b.onclick = () => { m._v = b.dataset.a; m.querySelector(".acts .btn").onclick = null; S._modal = null; m.remove(); doMove(ids, b.dataset.a); })
+  });
+  if (v && v.a) doMove(ids, v.a);
+}
+async function doMove(ids, album) { for (const id of ids) { const m = S.items.get(id); if (m) { m.album = album; await putMeta(m); } } exitSelect(); render(); toast(album ? `Moved to "${album}"` : "Removed from album"); }
+
+/* ============================================================
+   RENDERING
+   ============================================================ */
+const TITLES = { photos: "Photos", videos: "Videos", files: "Files", notes: "Notes", settings: "Settings" };
+const TYPEOF = { photos: "photo", videos: "video", files: "file", notes: "note" };
+function setTab(t) {
+  S.tab = t; S.album = ""; S.bin = false; exitSelect();
+  document.querySelectorAll("#nav button").forEach(b => b.classList.toggle("on", b.dataset.tab === t));
+  render(); $("#main").scrollTop = 0;
+}
+$("#nav").addEventListener("click", e => { const b = e.target.closest("button"); if (b) setTab(b.dataset.tab); });
+$("#hLock").onclick = () => lockNow();
+$("#hSelect").onclick = () => S.selecting ? exitSelect() : enterSelect();
+$("#fab").onclick = () => {
+  if (S.tab === "photos") pick(IMG_ACCEPT);
+  else if (S.tab === "videos") pick(VID_ACCEPT);
+  else if (S.tab === "files") pick("");
+  else if (S.tab === "notes") openEditor(null);
+};
+function albumList(type) { return [...new Set([...S.items.values()].filter(m => m.type === type && !m.deleted && m.album).map(m => m.album))].sort(); }
+function currentItems() {
+  if (S.bin) return [...S.items.values()].filter(m => m.deleted).sort((a, b) => b.deletedAt - a.deletedAt);
+  const type = TYPEOF[S.tab];
+  return [...S.items.values()].filter(m => m.type === type && !m.deleted && (!S.album || m.album === S.album))
+    .sort((a, b) => (b.updated || b.created) - (a.updated || a.created));
+}
+const EMPTY_ICON = `<svg viewBox="0 0 24 24" class="ico"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>`;
+function render() {
+  if (!S.key) return;
+  const main = $("#main"), tab = S.tab;
+  $("#hTitle").textContent = S.bin ? "Recycle bin" : TITLES[tab];
+  show("#fab", !S.bin && tab !== "settings" && !S.selecting);
+  show("#hSelect", tab !== "settings");
+  // album chips
+  const chips = $("#chips");
+  if (!S.bin && (tab === "photos" || tab === "videos")) {
+    const albums = albumList(TYPEOF[tab]);
+    chips.innerHTML = `<button class="chip ${!S.album ? "on" : ""}" data-a="">All</button>` + albums.map(a => `<button class="chip ${S.album === a ? "on" : ""}" data-a="${esc(a)}">${esc(a)}</button>`).join("") + `<button class="chip" data-new="1">+ Album</button>`;
+    show(chips, true);
+  } else show(chips, false);
+  if (tab === "settings" && !S.bin) return renderSettings(main);
+  const list = currentItems();
+  if (!list.length) {
+    const msg = S.bin ? "Recycle bin is empty" : { photos: "No hidden photos yet", videos: "No hidden videos yet", files: "No hidden files yet", notes: "No private notes yet" }[tab];
+    const sub = S.bin ? "" : tab === "notes" ? "Tap + to write an encrypted note" : "Tap + to hide and encrypt";
+    main.innerHTML = `${S.bin ? binHeader() : ""}<div class="empty">${EMPTY_ICON}<div><b>${msg}</b></div><div>${sub}</div></div>`;
+    return;
+  }
+  if (S.bin) { main.innerHTML = binHeader() + `<div class="list">${list.map(rowHTML).join("")}</div>`; return; }
+  if (tab === "photos" || tab === "videos") {
+    main.innerHTML = `<div class="grid">${list.map(m => `<div class="tile ${S.sel.has(m.id) ? "sel" : ""}" data-id="${m.id}">
+      ${m.thumb ? `<img data-th="${m.id}" alt="">` : `<div class="ph">${esc(m.name)}</div>`}
+      ${m.type === "video" ? `<span class="dur">▶ ${fmtDur(m.duration)}</span>` : ""}${S.selecting ? `<span class="chk"></span>` : ""}</div>`).join("")}</div>`;
+    lazyThumbs();
+  } else if (tab === "files") {
+    main.innerHTML = `<div class="list">${list.map(rowHTML).join("")}</div>`;
+  } else if (tab === "notes") {
+    main.innerHTML = list.map(m => `<div class="note ${S.sel.has(m.id) ? "sel" : ""}" data-id="${m.id}" style="${S.sel.has(m.id) ? "outline:2px solid var(--a1)" : ""}"><b>${esc(m.title || "Untitled")}</b><p>${esc(m.preview || "")}</p><small>${fmtDate(m.updated || m.created)}</small></div>`).join("");
+  }
+}
+function binHeader() { return `<button class="item" id="binBack"><span class="grow"><b>← Back to Settings</b><small>Items are erased automatically after ${BIN_DAYS} days. Use Select to restore or delete.</small></span></button>`; }
+function rowHTML(m) {
+  const ext = m.type === "note" ? "note" : (extOf(m.name) || m.type).slice(0, 4);
+  const name = m.type === "note" ? (m.title || "Untitled note") : m.name;
+  const sub = m.type === "note" ? fmtDate(m.updated || m.created) : `${fmtSize(m.size)} · ${fmtDate(m.created)}`;
+  return `<div class="row ${S.sel.has(m.id) ? "sel" : ""}" data-id="${m.id}"><div class="ext">${esc(ext)}</div><div class="grow"><div class="nm">${esc(name)}</div><div class="mt">${sub}</div></div></div>`;
+}
+let thumbObs;
+function lazyThumbs() {
+  thumbObs && thumbObs.disconnect();
+  thumbObs = new IntersectionObserver(ents => ents.forEach(async en => {
+    if (!en.isIntersecting) return; thumbObs.unobserve(en.target);
+    const u = await thumbURL(en.target.dataset.th); if (u) en.target.src = u;
+  }), { root: $("#main"), rootMargin: "400px" });
+  document.querySelectorAll("img[data-th]").forEach(i => thumbObs.observe(i));
+}
+$("#chips").addEventListener("click", async e => {
+  const b = e.target.closest(".chip"); if (!b) return;
+  if (b.dataset.new) {
+    const n = await promptBox("New album", "", "Album name");
+    if (n) { S.album = n; render(); toast(`Album "${n}" — tap + to add, or select items and Move`); }
+    return;
+  }
+  S.album = b.dataset.a; render();
+});
+// tap / long-press on items
+let lpTimer = null, lpFired = false;
+$("#main").addEventListener("pointerdown", e => {
+  const el = e.target.closest("[data-id]"); if (!el) return; lpFired = false;
+  lpTimer = setTimeout(() => { lpFired = true; if (!S.selecting) enterSelect(); toggleSel(el.dataset.id); if (navigator.vibrate) navigator.vibrate(30); }, 480);
+});
+["pointerup", "pointerleave", "pointercancel"].forEach(ev => $("#main").addEventListener(ev, () => clearTimeout(lpTimer)));
+$("#main").addEventListener("scroll", () => clearTimeout(lpTimer), { passive: true });
+$("#main").addEventListener("click", e => {
+  if (e.target.closest("#binBack")) { S.bin = false; exitSelect(); render(); return; }
+  const el = e.target.closest("[data-id]"); if (!el || lpFired) { lpFired = false; return; }
+  const id = el.dataset.id;
+  if (S.selecting) return toggleSel(id);
+  const m = S.items.get(id); if (!m) return;
+  if (S.bin) return binItemMenu(m);
+  if (m.type === "note") return openEditor(m);
+  openViewer(id);
+});
+async function binItemMenu(m) {
+  const v = await modal({ title: m.type === "note" ? (m.title || "Untitled note") : m.name, text: `Deleted ${fmtDate(m.deletedAt)}`, buttons: [{ label: "Restore", value: "r" }, { label: "Delete forever", value: "d", cls: "danger" }, { label: "Cancel", value: null, cls: "ghost" }] });
+  if (v === "r") restoreItems([m.id]); else if (v === "d") eraseItems([m.id]);
+}
+
+/* ---------- selection ---------- */
+function enterSelect() { S.selecting = true; S.sel.clear(); renderSelbar(); render(); }
+function exitSelect() { S.selecting = false; S.sel.clear(); show("#selbar", false); show("#nav", true); if (S.key) render(); }
+function toggleSel(id) { S.sel.has(id) ? S.sel.delete(id) : S.sel.add(id); renderSelbar(); render(); }
+function renderSelbar() {
+  const bar = $("#selbar"); show(bar, S.selecting); show("#nav", !S.selecting);
+  const n = S.sel.size;
+  const I = { all: '<path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/>', out: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5M12 15V3"/>', mv: '<path d="M3 7h6l2 2h10v10H3z"/>', del: '<path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>', x: '<path d="M18 6L6 18M6 6l12 12"/>', rs: '<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/>' };
+  const b = (k, ic, label) => `<button data-act="${k}"><svg class="ico" viewBox="0 0 24 24">${I[ic]}</svg>${label}</button>`;
+  bar.innerHTML = S.bin
+    ? b("all", "all", "All") + b("restore", "rs", `Restore (${n})`) + b("erase", "del", "Delete") + b("cancel", "x", "Cancel")
+    : b("all", "all", "All") + b("export", "out", `Unhide (${n})`) + ((S.tab === "photos" || S.tab === "videos") ? b("move", "mv", "Album") : "") + b("trash", "del", "Delete") + b("cancel", "x", "Cancel");
+}
+$("#selbar").addEventListener("click", async e => {
+  const b = e.target.closest("button"); if (!b) return;
+  const ids = [...S.sel], a = b.dataset.act;
+  if (a === "cancel") return exitSelect();
+  if (a === "all") { const all = currentItems().map(m => m.id); if (S.sel.size === all.length) S.sel.clear(); else all.forEach(id => S.sel.add(id)); renderSelbar(); return render(); }
+  if (!ids.length) return toast("Select items first");
+  if (a === "export") { await exportItems(ids); exitSelect(); }
+  else if (a === "trash") { if (await trashItems(ids)) exitSelect(); }
+  else if (a === "move") moveToAlbum(ids);
+  else if (a === "restore") { await restoreItems(ids); exitSelect(); }
+  else if (a === "erase") { await eraseItems(ids); exitSelect(); }
+});
+
+/* ============================================================
+   VIEWER
+   ============================================================ */
+let vList = [], vIdx = 0, vURL = null;
+async function openViewer(id) {
+  vList = currentItems().map(m => m.id); vIdx = Math.max(0, vList.indexOf(id));
+  show("#viewer"); S.view = true; await showViewItem();
+}
+async function showViewItem() {
+  const m = S.items.get(vList[vIdx]); if (!m) return closeViewer();
+  const st = $("#vStage"); st.innerHTML = `<div style="color:var(--mut)">Decrypting…</div>`;
+  $("#vName").textContent = m.name;
+  if (vURL) { URL.revokeObjectURL(vURL); vURL = null; }
+  const buf = await getData(m.id); if (!buf || vList[vIdx] !== m.id) return;
+  const blob = new Blob([buf], { type: m.mime });
+  const nav = vList.length > 1 && S.tab !== "files" ? `<button class="nav l" id="vPrev"><svg class="ico" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button><button class="nav r" id="vNext"><svg class="ico" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></button>` : "";
+  if (m.mime.startsWith("image/")) { vURL = URL.createObjectURL(blob); st.innerHTML = `<img src="${vURL}" alt="">` + nav; st.querySelector("img").onerror = () => noPreview(st, m); }
+  else if (m.mime.startsWith("video/")) { vURL = URL.createObjectURL(blob); st.innerHTML = `<video src="${vURL}" controls autoplay playsinline></video>` + nav; st.querySelector("video").onerror = () => noPreview(st, m); }
+  else if (m.mime.startsWith("audio/")) { vURL = URL.createObjectURL(blob); st.innerHTML = `<div style="text-align:center;padding:20px"><div class="ext" style="margin:0 auto 16px;width:90px;height:90px;font-size:18px">${esc(extOf(m.name))}</div><audio src="${vURL}" controls autoplay></audio></div>`; }
+  else if (/^text\/|json|xml|csv|markdown/.test(m.mime) && m.size < 2e6) { st.innerHTML = `<pre>${esc(TD.decode(buf))}</pre>`; }
+  else if (m.mime === "application/pdf" && !NATIVE) { vURL = URL.createObjectURL(blob); st.innerHTML = `<iframe src="${vURL}" style="border:0;width:100%;height:100%;padding-top:62px;background:#fff"></iframe>`; }
+  else noPreview(st, m);
+  const p = $("#vPrev"), n = $("#vNext");
+  if (p) p.onclick = () => stepView(-1); if (n) n.onclick = () => stepView(1);
+}
+function noPreview(st, m) {
+  st.innerHTML = `<div style="text-align:center;padding:24px"><div class="ext" style="margin:0 auto 14px;width:90px;height:90px;font-size:18px">${esc((extOf(m.name) || "file").slice(0, 4))}</div><b>${esc(m.name)}</b><div style="color:var(--mut);margin:6px 0 18px">${fmtSize(m.size)} · preview not available</div><button class="btn" id="npExp">Unhide / Open with…</button></div>`;
+  $("#npExp").onclick = () => $("#vExport").click();
+}
+function stepView(d) { if (!vList.length) return; vIdx = (vIdx + d + vList.length) % vList.length; showViewItem(); }
+function closeViewer() { show("#viewer", false); S.view = null; $("#vStage").innerHTML = ""; if (vURL) { URL.revokeObjectURL(vURL); vURL = null; } }
+$("#vClose").onclick = closeViewer;
+$("#vExport").onclick = async () => { const id = vList[vIdx]; if (await exportItems([id])) afterRemove(id); };
+$("#vDel").onclick = async () => { const id = vList[vIdx]; if (await trashItems([id])) afterRemove(id); };
+function afterRemove(id) { vList = vList.filter(x => x !== id); if (!vList.length) return closeViewer(); vIdx = Math.min(vIdx, vList.length - 1); showViewItem(); }
+$("#vInfo").onclick = () => {
+  const m = S.items.get(vList[vIdx]); if (!m) return;
+  const rows = [["Name", m.name], ["Type", m.mime], ["Size", fmtSize(m.size)], m.w ? ["Dimensions", `${m.w} × ${m.h}`] : null, m.duration ? ["Duration", fmtDur(m.duration)] : null, ["Album", m.album || "—"], ["Hidden on", fmtDate(m.created)], ["Encryption", "AES-256-GCM"]].filter(Boolean);
+  modal({ title: "Details", html: rows.map(([k, v]) => `<div style="display:flex;gap:10px;padding:6px 0;border-bottom:1px solid var(--line)"><span style="color:var(--mut);width:100px;flex:none">${k}</span><span style="word-break:break-all">${esc(v)}</span></div>`).join(""),
+    buttons: [{ label: "Rename", value: "ren", cls: "ghost" }, { label: "Close", value: null }] })
+    .then(async v => { if (v === "ren") { const n = await promptBox("Rename", m.name); if (n) { m.name = n; await putMeta(m); $("#vName").textContent = n; render(); } } });
+};
+// swipe
+let sx = null;
+$("#vStage").addEventListener("touchstart", e => { sx = e.touches.length === 1 ? e.touches[0].clientX : null; }, { passive: true });
+$("#vStage").addEventListener("touchend", e => { if (sx === null || S.tab === "files") return; const dx = e.changedTouches[0].clientX - sx; if (Math.abs(dx) > 60 && !e.target.closest("video")) stepView(dx < 0 ? 1 : -1); sx = null; });
+document.addEventListener("keydown", e => { if (!S.view) return; if (e.key === "ArrowRight") stepView(1); else if (e.key === "ArrowLeft") stepView(-1); else if (e.key === "Escape") closeViewer(); });
+
+/* ============================================================
+   NOTES
+   ============================================================ */
+async function noteText(m) { const b = await getData(m.id); return b ? TD.decode(b) : ""; }
+let eTimer = null;
+async function openEditor(m) {
+  S.note = m ? m : { id: uid(), type: "note", title: "", created: Date.now(), updated: Date.now(), preview: "", size: 0, deleted: false, _new: true };
+  $("#eTitle").value = S.note.title || ""; $("#eBody").value = m ? await noteText(m) : "";
+  $("#eState").textContent = "Saved · encrypted"; show("#editor");
+  if (!m) setTimeout(() => $("#eTitle").focus(), 60);
+}
+async function saveNote() {
+  const n = S.note; if (!n || !S.key) return;
+  const title = $("#eTitle").value.trim(), body = $("#eBody").value;
+  if (n._new && !title && !body.trim()) return;
+  delete n._new;
+  n.title = title; n.preview = body.slice(0, 200); n.updated = Date.now(); n.size = TE.encode(body).length;
+  await idb.put(S.db, "data", n.id, await aesEnc(S.key, TE.encode(body)));
+  await putMeta(n); $("#eState").textContent = "Saved · encrypted";
+}
+const queueSave = () => { $("#eState").textContent = "Saving…"; clearTimeout(eTimer); eTimer = setTimeout(saveNote, 600); };
+$("#eTitle").addEventListener("input", queueSave); $("#eBody").addEventListener("input", queueSave);
+async function closeEditor(silent) {
+  if (!S.note) return; clearTimeout(eTimer);
+  if (!silent || S.key) await saveNote().catch(() => { });
+  S.note = null; show("#editor", false); $("#eBody").value = ""; $("#eTitle").value = "";
+  if (!silent) render();
+}
+$("#eBack").onclick = () => closeEditor(false);
+$("#eDel").onclick = async () => {
+  const n = S.note; if (!n) return;
+  if (n._new) { S.note = null; show("#editor", false); return; }
+  clearTimeout(eTimer); await saveNote();
+  if (await trashItems([n.id])) { S.note = null; show("#editor", false); render(); }
+};
+
+/* ============================================================
+   SETTINGS
+   ============================================================ */
+function renderSettings(main) {
+  const st = cfg.settings, all = [...S.items.values()];
+  const cnt = t => all.filter(m => m.type === t && !m.deleted).length;
+  const bytes = all.reduce((a, m) => a + (m.size || 0), 0), binN = all.filter(m => m.deleted).length;
+  const al = { "0": "Immediately", "30": "After 30 seconds", "60": "After 1 minute", "300": "After 5 minutes", "-1": "Never" }[String(st.autolock)] || "Immediately";
+  const sw = on => `<span class="sw ${on ? "on" : ""}"></span>`;
+  main.innerHTML = `
+  ${S.slot === "B" ? "" : `<div class="sec"><h3>Vault</h3>
+    <div class="item"><span class="grow"><b>${cnt("photo")} photos · ${cnt("video")} videos · ${cnt("file")} files · ${cnt("note")} notes</b><small>${fmtSize(bytes)} encrypted on this device</small></span></div>
+  </div>`}
+  <div class="sec"><h3>Security</h3>
+    <button class="item" data-s="pin"><span class="grow"><b>Change PIN</b><small>4–8 digits</small></span></button>
+    ${S.slot === "A" ? `<button class="item" data-s="decoy"><span class="grow"><b>Fake PIN (decoy vault)</b><small>${cfg.slots.B ? "On — a second PIN opens a separate, harmless vault" : "Off — set a second PIN that opens a different vault"}</small></span></button>` : ""}
+    <button class="item" data-s="disguise"><span class="grow"><b>Calculator disguise</b><small>App opens as a working calculator. Type your PIN and press = to open the vault.</small></span>${sw(st.disguise)}</button>
+    <button class="item" data-s="autolock"><span class="grow"><b>Auto-lock</b><small>${al} when you leave the app</small></span></button>
+    <button class="item" data-s="intruders"><span class="grow"><b>Break-in alerts</b><small>${cfg.intruders.length} wrong PIN attempt${cfg.intruders.length === 1 ? "" : "s"} logged</small></span></button>
+  </div>
+  <div class="sec"><h3>Hiding</h3>
+    <button class="item" data-s="askDelete"><span class="grow"><b>Offer to delete originals</b><small>After hiding, remove the original files so they only exist in MeySafe</small></span>${sw(st.askDelete)}</button>
+    <button class="item" data-s="bin"><span class="grow"><b>Recycle bin</b><small>${binN} item${binN === 1 ? "" : "s"} · auto-erased after ${BIN_DAYS} days</small></span></button>
+  </div>
+  <div class="sec"><h3>Backup</h3>
+    <button class="item" data-s="backup"><span class="grow"><b>Back up vault</b><small>Save an encrypted .meysafe file (protected by your current PIN)</small></span></button>
+    <button class="item" data-s="restore"><span class="grow"><b>Restore from backup</b><small>Merge a .meysafe backup into this vault</small></span></button>
+  </div>
+  <div class="sec"><h3>About</h3>
+    <div class="about"><img src="icon.png" alt=""><div style="color:var(--tx);font-weight:700;font-size:17px;margin-top:8px">MeySafe</div>
+    <div>Version ${VERSION} · Developer: Kamil</div><div style="font-size:13px;margin-top:6px">Hide photos, videos, files & notes with AES-256 encryption. Your data never leaves this device.</div></div>
+  </div>`;
+  main.querySelectorAll("[data-s]").forEach(b => b.onclick = () => settingAction(b.dataset.s));
+}
+async function settingAction(k) {
+  const st = cfg.settings;
+  if (k === "disguise") {
+    if (!st.disguise && !await confirmBox("Turn on calculator disguise?", "MeySafe will open as a calculator. To unlock, type your PIN and press =. Remember this!", "Turn on")) return;
+    st.disguise = !st.disguise; await saveCfg("settings"); NATIVE && NATIVE.setDisguise && NATIVE.setDisguise(st.disguise); render();
+  } else if (k === "askDelete") { st.askDelete = !st.askDelete; await saveCfg("settings"); render(); }
+  else if (k === "autolock") {
+    const v = await modal({ title: "Auto-lock", buttons: [["Immediately", 0], ["After 30 seconds", 30], ["After 1 minute", 60], ["After 5 minutes", 300], ["Never", -1]].map(([l, v]) => ({ label: l, value: v, cls: st.autolock === v ? "" : "ghost" })) });
+    if (v !== null && v !== undefined) { st.autolock = v; await saveCfg("settings"); render(); }
+  } else if (k === "pin") changePin();
+  else if (k === "decoy") decoySetup();
+  else if (k === "intruders") {
+    const v = await modal({ title: "Break-in alerts", text: cfg.intruders.length ? "Wrong PIN attempts on this device:" : "No failed attempts. 🎉",
+      html: cfg.intruders.slice(0, 50).map(x => `<div style="padding:8px 0;border-bottom:1px solid var(--line)">⚠️ ${fmtDate(x.t)}</div>`).join(""),
+      buttons: cfg.intruders.length ? [{ label: "Clear log", value: "c", cls: "ghost" }, { label: "Close", value: null }] : [{ label: "Close", value: null }] });
+    if (v === "c") { cfg.intruders = []; await saveCfg("intruders"); render(); }
+  } else if (k === "bin") { S.bin = true; exitSelect(); render(); }
+  else if (k === "backup") backupVault();
+  else if (k === "restore") { S.picking = true; $("#restorePicker").value = ""; $("#restorePicker").click(); }
+}
+async function changePin() {
+  const cur = await pinPrompt("Current PIN", "Enter your current PIN"); if (cur == null) return;
+  if (!await openSlot(cfg.slots[S.slot], cur)) return toast("Wrong PIN");
+  const p1 = await pinPrompt("New PIN", "Choose a new 4–8 digit PIN"); if (p1 == null) return;
+  if (!/^\d{4,8}$/.test(p1)) return toast("PIN must be 4–8 digits");
+  const p2 = await pinPrompt("Confirm new PIN", ""); if (p2 !== p1) return toast("PINs didn't match");
+  const other = S.slot === "A" ? "B" : "A";
+  if (await openSlot(cfg.slots[other], p1)) return toast("That PIN is already in use");
+  const { slot } = await makeSlot(p1, S.raw); cfg.slots[S.slot] = slot; await saveCfg("slots"); toast("PIN changed");
+}
+async function decoySetup() {
+  if (cfg.slots.B) {
+    const v = await modal({ title: "Fake PIN", text: "The decoy vault opens with your fake PIN. Turning it off erases the decoy vault's contents.", buttons: [{ label: "Change fake PIN", value: "ch", cls: "ghost" }, { label: "Turn off & erase decoy", value: "off", cls: "danger" }, { label: "Cancel", value: null, cls: "ghost" }] });
+    if (v === "off") { delete cfg.slots.B; await saveCfg("slots"); indexedDB.deleteDatabase("meysafe-vault-B"); toast("Decoy vault removed"); render(); return; }
+    if (v !== "ch") return;
+  } else if (!await confirmBox("Set up a fake PIN?", "If someone forces you to unlock, enter the fake PIN: it opens a separate decoy vault that looks real. Put some harmless items in it.", "Set fake PIN")) return;
+  const p1 = await pinPrompt("Fake PIN", "Must be different from your real PIN"); if (p1 == null) return;
+  if (!/^\d{4,8}$/.test(p1)) return toast("PIN must be 4–8 digits");
+  if (await openSlot(cfg.slots.A, p1)) return toast("Fake PIN must differ from your real PIN");
+  const p2 = await pinPrompt("Confirm fake PIN", ""); if (p2 !== p1) return toast("PINs didn't match");
+  const old = cfg.slots.B ? await openSlot(cfg.slots.B, await pinPrompt("Current fake PIN", "Enter the old fake PIN to keep decoy contents") || "") : null;
+  const { slot } = await makeSlot(p1, old || undefined); cfg.slots.B = slot; await saveCfg("slots");
+  if (!old) indexedDB.deleteDatabase("meysafe-vault-B");
+  toast("Fake PIN set"); render();
+}
+
+/* ---------------- Backup / restore ----------------
+   Format: "MEYSAFE1" | uint32 headerLen | header JSON | records…
+   Records are the already-encrypted ciphertexts, so the backup
+   is as safe as the vault itself (needs the PIN to open).        */
+async function backupVault() {
+  const pg = progress("Preparing backup");
+  try {
+    const recs = [], parts = [];
+    for (const st of ["meta", "data", "thumb"]) {
+      const ents = await idb.entries(S.db, st);
+      ents.forEach(([k, v]) => { const ct = new Uint8Array(v.ct); recs.push({ s: st, k, iv: b64(new Uint8Array(v.iv)), n: ct.length }); parts.push(ct); });
+    }
+    const sl = cfg.slots[S.slot];
+    const header = TE.encode(JSON.stringify({ app: "MeySafe", v: 1, created: Date.now(), slot: { salt: b64(sl.salt), iv: b64(sl.iv), wrapped: b64(new Uint8Array(sl.wrapped)) }, recs }));
+    const len = new Uint8Array(4); new DataView(len.buffer).setUint32(0, header.length);
+    const blob = new Blob([TE.encode("MEYSAFE1"), len, header, ...parts], { type: "application/octet-stream" });
+    const d = new Date(), name = `MeySafe-backup-${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}.meysafe`;
+    pg.set(1, 2, fmtSize(blob.size));
+    const where = await saveOut(name, "application/octet-stream", blob);
+    pg.done(); toast(`Backup saved${typeof where === "string" ? " to " + where : ""}`, 3000);
+  } catch (e) { pg.done(); console.error(e); toast("Backup failed"); }
+}
+$("#restorePicker").addEventListener("change", async e => {
+  S.picking = false;
+  const f = e.target.files[0]; if (!f || !S.key) return;
+  try {
+    const buf = await f.arrayBuffer(), u8 = new Uint8Array(buf);
+    if (TD.decode(u8.subarray(0, 8)) !== "MEYSAFE1") return toast("Not a MeySafe backup file");
+    const hl = new DataView(buf).getUint32(8), hdr = JSON.parse(TD.decode(u8.subarray(12, 12 + hl)));
+    const pin = await pinPrompt("Backup PIN", "Enter the PIN that was active when this backup was made"); if (pin == null) return;
+    const raw = await openSlot({ salt: unb64(hdr.slot.salt), iv: unb64(hdr.slot.iv), wrapped: unb64(hdr.slot.wrapped) }, pin);
+    if (!raw) return toast("Wrong PIN for this backup");
+    const bkey = await importMaster(raw);
+    const pg = progress("Restoring"); let off = 12 + hl;
+    const byId = new Map();
+    hdr.recs.forEach(r => { r.off = off; off += r.n; if (!byId.has(r.k)) byId.set(r.k, {}); byId.get(r.k)[r.s] = r; });
+    let i = 0, ok = 0;
+    for (const [oldId, g] of byId) {
+      pg.set(i++, byId.size);
+      try {
+        if (!g.meta) continue;
+        const rd = r => aesDec(bkey, { iv: unb64(r.iv), ct: u8.slice(r.off, r.off + r.n) });
+        const meta = JSON.parse(TD.decode(await rd(g.meta)));
+        const id = S.items.has(oldId) ? uid() : oldId; meta.id = id;
+        if (g.data) await idb.put(S.db, "data", id, await aesEnc(S.key, await rd(g.data)));
+        if (g.thumb) await idb.put(S.db, "thumb", id, await aesEnc(S.key, await rd(g.thumb)));
+        await putMeta(meta); ok++;
+      } catch (err) { console.warn(err); }
+    }
+    pg.done(); render(); toast(`Restored ${ok} item${ok === 1 ? "" : "s"}`);
+  } catch (err) { console.error(err); toast("Restore failed — file may be damaged"); }
+});
+
+/* ============================================================
+   AUTO-LOCK, BACK BUTTON, BOOT
+   ============================================================ */
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) { S.hiddenAt = Date.now(); if (S.view) { const v = $("#vStage video"); v && v.pause(); } return; }
+  if (!S.key) return;
+  if (S.picking) { setTimeout(() => { S.picking = false; }, 1500); return; }
+  const a = cfg.settings.autolock;
+  if (a >= 0 && Date.now() - S.hiddenAt >= a * 1000) lockNow();
+});
+window.msLockNow = () => { if (!S.picking) lockNow(); };
+window.msBack = () => {           // called by Android back button; returns "1" if handled
+  if (S._modal) { S._modal(); return "1"; }
+  if (S.view) { closeViewer(); return "1"; }
+  if (S.note) { closeEditor(false); return "1"; }
+  if (S.selecting) { exitSelect(); return "1"; }
+  if (S.bin) { S.bin = false; render(); return "1"; }
+  if (S.key && S.album) { S.album = ""; render(); return "1"; }
+  if (S.key && S.tab !== "photos") { setTab("photos"); return "1"; }
+  return "";
+};
+document.addEventListener("keydown", e => { if (e.key === "Escape" && !S.view) window.msBack(); });
+// drag & drop (desktop)
+document.addEventListener("dragover", e => { if (S.key) e.preventDefault(); });
+document.addEventListener("drop", e => { if (!S.key) return; e.preventDefault(); const f = [...e.dataTransfer.files]; if (f.length) importFiles(f); });
+
+(async function boot() {
+  buildPad(); buildCalc();
+  if (!window.crypto || !crypto.subtle) { document.body.innerHTML = "<p style='padding:30px'>Secure crypto is unavailable in this environment.</p>"; return; }
+  await loadCfg();
+  if (!cfg.slots.A) return showLock("setup");
+  cfg.settings.disguise ? showCalc() : showLock("unlock");
+})();
+</script>
+</body>
+</html>

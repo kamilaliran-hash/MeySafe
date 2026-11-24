@@ -1,0 +1,82 @@
+name: Build MeySafe
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  android:
+    name: Android APK
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Build release APK
+        working-directory: android
+        run: gradle assembleRelease --no-daemon --stacktrace
+      - name: Rename APK
+        run: |
+          mkdir -p out
+          cp android/app/build/outputs/apk/release/app-release.apk out/MeySafe-1.0.0.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MeySafe-Android
+          path: out/MeySafe-1.0.0.apk
+
+  windows:
+    name: Windows EXE + installer
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Prepare desktop app
+        shell: bash
+        run: |
+          rm -rf desktop/www && cp -r www desktop/www
+          mkdir -p desktop/build && cp assets/icon.ico desktop/build/icon.ico
+      - name: Build portable EXE and NSIS installer
+        working-directory: desktop
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+        run: |
+          npm install --no-audit --no-fund
+          npx electron-builder --win portable nsis --x64 --publish never
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MeySafe-Windows
+          path: |
+            desktop/dist/MeySafe-1.0.0-portable.exe
+            desktop/dist/MeySafe-Setup-1.0.0.exe
+
+  release:
+    name: Publish release
+    needs: [ android, windows ]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: files
+          merge-multiple: true
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.0-build${{ github.run_number }}
+          name: MeySafe 1.0.0 (build ${{ github.run_number }})
+          body: |
+            **MeySafe** — hide & encrypt private photos, videos, files and notes. Developer: Kamil
+            - `MeySafe-1.0.0.apk` — Android (install directly)
+            - `MeySafe-Setup-1.0.0.exe` — Windows installer
+            - `MeySafe-1.0.0-portable.exe` — Windows, no install needed
+          files: files/*

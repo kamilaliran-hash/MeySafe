@@ -1,0 +1,53 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.kamil.meysafe'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId 'com.kamil.meysafe'
+        minSdk 24
+        targetSdk 34
+        versionCode 1
+        versionName '1.0.0'
+    }
+
+    signingConfigs {
+        release {
+            storeFile file('meysafe-release.jks')
+            storePassword System.getenv('MEYSAFE_STORE_PASSWORD') ?: 'meysafe2026'
+            keyAlias 'meysafe'
+            keyPassword System.getenv('MEYSAFE_KEY_PASSWORD') ?: 'meysafe2026'
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.release
+        }
+    }
+
+    lint {
+        checkReleaseBuilds false
+        abortOnError false
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    implementation 'androidx.webkit:webkit:1.11.0'
+}
+
+// Copy the shared web app (../../www) into the APK assets before every build.
+tasks.register('copyWeb', Copy) {
+    from rootProject.file('../www')
+    into layout.projectDirectory.dir('src/main/assets/www')
+}
+preBuild.dependsOn 'copyWeb'

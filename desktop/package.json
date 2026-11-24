@@ -1,0 +1,42 @@
+{
+  "name": "meysafe",
+  "productName": "MeySafe",
+  "version": "1.0.0",
+  "description": "MeySafe - hide and encrypt private photos, videos, files and notes",
+  "author": "Kamil",
+  "license": "UNLICENSED",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win portable nsis --x64 --publish never"
+  },
+  "devDependencies": {
+    "electron": "^31.7.7",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.kamil.meysafe",
+    "productName": "MeySafe",
+    "copyright": "Copyright © 2026 Kamil",
+    "directories": { "output": "dist", "buildResources": "build" },
+    "files": ["main.js", "preload.js", "www/**/*"],
+    "win": {
+      "icon": "build/icon.ico",
+      "target": ["portable", "nsis"]
+    },
+    "portable": { "artifactName": "MeySafe-${version}-portable.exe" },
+    "nsis": {
+      "artifactName": "MeySafe-Setup-${version}.exe",
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "MeySafe",
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "uninstallDisplayName": "MeySafe",
+      "deleteAppDataOnUninstall": false
+    }
+  }
+}
